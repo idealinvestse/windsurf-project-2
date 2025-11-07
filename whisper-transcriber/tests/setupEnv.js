@@ -1,0 +1,14 @@
+process.env.NODE_ENV = 'test';
+process.env.OPENAI_API_KEY = process.env.OPENAI_API_KEY || 'test-key';
+process.env.PORT = process.env.PORT || '0';
+process.env.CORS_ORIGIN = '*';
+process.env.WHISPER_MODEL = 'whisper-1';
+process.env.GPT_MODEL = 'gpt-4-turbo-preview';
+process.env.GPT_TEMPERATURE = '0.7';
+process.env.UPLOAD_DIR = 'uploads/';
+process.env.MAX_UPLOAD_SIZE = `${25 * 1024 * 1024}`;
+process.env.EXPORT_DIR = 'exports/';
+process.env.AUDIO_CHUNK_SIZE = '3';
+process.env.MAX_CHUNK_BUFFER = '10';
+process.env.LOG_LEVEL = 'error';
+process.env.LOG_FORMAT = 'json';
