@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Whisper Transcriber</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Whisper Transcriber</h1>
+        
+        <div class="controls">
+            <button id="startBtn" class="btn">Start Recording</button>
+            <button id="stopBtn" class="btn btn-danger" disabled>Stop Recording</button>
+            <button id="clearBtn" class="btn">Clear</button>
+            <div class="file-upload">
+                <label for="audioFile" class="btn">Upload Audio File</label>
+                <input type="file" id="audioFile" accept="audio/*" style="display: none;">
+            </div>
+        </div>
+        
+        <div class="status">
+            <div id="status">Ready to record</div>
+            <div id="recordingTime">00:00</div>
+        </div>
+        
+        <div class="transcript-container">
+            <h2>Transcript</h2>
+            <div id="transcript" class="transcript"></div>
+        </div>
+        
+        <div class="analysis-container">
+            <h2>AI Analysis</h2>
+            <div id="analysis" class="analysis"></div>
+        </div>
+        
+        <div class="tasks-container">
+            <h2>Tasks & Action Items</h2>
+            <div id="tasks" class="tasks"></div>
+        </div>
+        
+        <div class="export-container">
+            <h2>Export</h2>
+            <div class="export-controls">
+                <select id="exportFormat" class="export-select">
+                    <option value="text">Plain Text</option>
+                    <option value="json">JSON</option>
+                    <option value="markdown">Markdown</option>
+                    <option value="srt">SRT (Subtitles)</option>
+                    <option value="vtt">VTT (WebVTT)</option>
+                </select>
+                <button id="exportBtn" class="btn">Export Transcript</button>
+            </div>
+            <div id="exportStatus" class="export-status"></div>
+        </div>
+    </div>
+    
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
