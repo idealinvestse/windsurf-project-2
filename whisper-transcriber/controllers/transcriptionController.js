@@ -62,10 +62,15 @@ class TranscriptionController {
       });
 
       // Emit transcription
-      this.io.to(sessionId).emit('transcription', {
-        text: transcription.text,
-        isFinal: true
-      });
+      if (this.io && this.io.to) {
+        const socket = this.io.to(sessionId);
+        if (socket && socket.emit) {
+          socket.emit('transcription', {
+            text: transcription.text,
+            isFinal: true
+          });
+        }
+      }
 
       // Perform AI analysis in parallel
       try {
@@ -73,7 +78,12 @@ class TranscriptionController {
           transcription.text,
           sessionId
         );
-        this.io.to(sessionId).emit('analysis', analysis);
+        if (this.io && this.io.to) {
+          const socket = this.io.to(sessionId);
+          if (socket && socket.emit) {
+            socket.emit('analysis', analysis);
+          }
+        }
 
         // Check if any tools should be called
         const availableTools = this.taskExecutor.getAvailableTools();
@@ -91,12 +101,17 @@ class TranscriptionController {
               autoExecute: false
             });
 
-            this.io.to(sessionId).emit('task_created', {
-              taskId,
-              toolName: tool.name,
-              reason: tool.reason,
-              requiresApproval: true
-            });
+            if (this.io && this.io.to) {
+              const socket = this.io.to(sessionId);
+              if (socket && socket.emit) {
+                socket.emit('task_created', {
+                  taskId,
+                  toolName: tool.name,
+                  reason: tool.reason,
+                  requiresApproval: true
+                });
+              }
+            }
           }
         }
 
@@ -110,10 +125,15 @@ class TranscriptionController {
               autoExecute: false
             });
 
-            this.io.to(sessionId).emit('action_item', {
-              taskId,
-              ...actionItem
-            });
+            if (this.io && this.io.to) {
+              const socket = this.io.to(sessionId);
+              if (socket && socket.emit) {
+                socket.emit('action_item', {
+                  taskId,
+                  ...actionItem
+                });
+              }
+            }
           }
         }
       } catch (analysisError) {
@@ -129,7 +149,12 @@ class TranscriptionController {
       return transcription.text;
     } catch (error) {
       logger.error('Error transcribing audio', error);
-      this.io.to(sessionId).emit('error', { message: 'Error transcribing audio' });
+      if (this.io && this.io.to) {
+        const socket = this.io.to(sessionId);
+        if (socket && socket.emit) {
+          socket.emit('error', { message: 'Error transcribing audio' });
+        }
+      }
       throw error;
     }
   }
