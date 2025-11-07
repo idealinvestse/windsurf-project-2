@@ -228,18 +228,164 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const data = await response.json();
             
+            // Store transcript data
+            transcriptData.push({ text: data.text, timestamp: new Date().toISOString() });
+            
             // Add the transcription to the UI
             const p = document.createElement('p');
             p.textContent = data.text;
             transcriptEl.appendChild(p);
             transcriptEl.scrollTop = transcriptEl.scrollHeight;
             
-            // Analyze the transcription
-            analyzeText(data.text);
-            
             statusEl.textContent = 'Transcription complete';
             
         } catch (error) {
             console.error('Error:', error);
             statusEl.textContent = 'Error processing audio file';
-            statusEl.style.color = 
+            statusEl.style.color = 'red';
+        } finally {
+            // Reset the file input
+            event.target.value = '';
+        }
+    });
+    
+    // Update the recording timer
+    function updateTimer() {
+        seconds++;
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        recordingTimeEl.textContent = `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+    }
+    
+    // Display AI analysis
+    function displayAnalysis(data) {
+        const analysisDiv = document.createElement('div');
+        analysisDiv.className = 'analysis-result';
+        
+        let html = '<strong>Summary:</strong><br>' + (data.summary || 'No summary available') + '<br><br>';
+        
+        if (data.topics && data.topics.length > 0) {
+            html += '<strong>Topics:</strong><br>' + data.topics.join(', ') + '<br><br>';
+        }
+        
+        if (data.entities) {
+            const entities = [];
+            if (data.entities.people && data.entities.people.length > 0) {
+                entities.push('People: ' + data.entities.people.join(', '));
+            }
+            if (data.entities.places && data.entities.places.length > 0) {
+                entities.push('Places: ' + data.entities.places.join(', '));
+            }
+            if (entities.length > 0) {
+                html += '<strong>Entities:</strong><br>' + entities.join('<br>') + '<br><br>';
+            }
+        }
+        
+        if (data.questions && data.questions.length > 0) {
+            html += '<strong>Questions:</strong><br>- ' + data.questions.join('<br>- ') + '<br><br>';
+        }
+        
+        if (data.sentiment) {
+            html += '<strong>Sentiment:</strong> ' + data.sentiment + '<br>';
+        }
+        
+        analysisDiv.innerHTML = html;
+        analysisEl.appendChild(analysisDiv);
+        analysisEl.scrollTop = analysisEl.scrollHeight;
+    }
+    
+    // Add task to UI
+    function addTask(taskData) {
+        const taskId = taskData.taskId;
+        tasks[taskId] = taskData;
+        
+        const taskDiv = document.createElement('div');
+        taskDiv.className = `task-item priority-${(taskData.priority || 'medium').toLowerCase()}`;
+        taskDiv.id = `task-${taskId}`;
+        
+        const priorityClass = (taskData.priority || 'medium').toLowerCase();
+        
+        let html = `
+            <div class="task-header">
+                <span class="task-title">${taskData.task || taskData.description || taskData.toolName || 'Task'}</span>
+                <span class="task-priority ${priorityClass}">${taskData.priority || 'medium'}</span>
+            </div>
+        `;
+        
+        if (taskData.reason) {
+            html += `<div class="task-description">${taskData.reason}</div>`;
+        }
+        
+        if (taskData.deadline) {
+            html += `<div class="task-description"><strong>Deadline:</strong> ${taskData.deadline}</div>`;
+        }
+        
+        html += `
+            <div class="task-actions">
+                <button class="btn btn-success" onclick="executeTask('${taskId}')">Execute</button>
+                <button class="btn btn-danger" onclick="rejectTask('${taskId}')">Reject</button>
+            </div>
+        `;
+        
+        taskDiv.innerHTML = html;
+        tasksEl.appendChild(taskDiv);
+        tasksEl.scrollTop = tasksEl.scrollHeight;
+    }
+    
+    // Execute task
+    window.executeTask = function(taskId) {
+        socket.emit('execute_task', { taskId });
+        updateTaskStatus(taskId, 'executing');
+    };
+    
+    // Reject task
+    window.rejectTask = function(taskId) {
+        socket.emit('reject_task', { taskId });
+        updateTaskStatus(taskId, 'rejected');
+    };
+    
+    // Update task status
+    function updateTaskStatus(taskId, status) {
+        const taskEl = document.getElementById(`task-${taskId}`);
+        if (taskEl) {
+            taskEl.classList.add(`status-${status}`);
+            const actionsDiv = taskEl.querySelector('.task-actions');
+            if (actionsDiv) {
+                if (status === 'completed') {
+                    actionsDiv.innerHTML = '<span style="color: #27ae60;">✓ Completed</span>';
+                } else if (status === 'rejected') {
+                    actionsDiv.innerHTML = '<span style="color: #e74c3c;">✗ Rejected</span>';
+                } else if (status === 'executing') {
+                    actionsDiv.innerHTML = '<span>Executing...</span>';
+                } else if (status === 'failed') {
+                    actionsDiv.innerHTML = '<span style="color: #e74c3c;">✗ Failed</span>';
+                }
+            }
+        }
+    }
+    
+    // Show export status
+    function showExportStatus(message, type) {
+        exportStatus.textContent = message;
+        exportStatus.className = 'export-status';
+        if (type) {
+            exportStatus.classList.add(type);
+        }
+        
+        // Clear status after 5 seconds for success messages
+        if (type === 'success') {
+            setTimeout(() => {
+                exportStatus.textContent = '';
+                exportStatus.className = 'export-status';
+            }, 5000);
+        }
+    }
+    
+    // Update the recording timer
+    function updateTimer() {
+        seconds++;
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        recordingTimeEl.textContent = `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+    }
+});

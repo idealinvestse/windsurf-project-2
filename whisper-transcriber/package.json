@@ -1,14 +1,25 @@
 {
   "name": "whisper-transcriber",
   "version": "1.0.0",
-  "main": "index.js",
+  "description": "Real-time audio transcription with AI-powered analysis, task detection, and tool execution",
+  "main": "server.js",
   "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
+  "keywords": [
+    "whisper",
+    "transcription",
+    "ai",
+    "openai",
+    "speech-to-text",
+    "audio",
+    "websocket",
+    "real-time"
+  ],
   "author": "",
-  "license": "ISC",
-  "description": "",
+  "license": "MIT",
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "body-parser": "^2.2.0",
