@@ -52,10 +52,24 @@ const upload = multer({ storage });
 // Set ffmpeg path
 ffmpeg.setFfmpegPath(ffmpegPath);
 
-// Initialize services
-const aiAnalyzer = new AIAnalyzer(process.env.OPENAI_API_KEY);
-const taskExecutor = new TaskExecutor();
-const exportService = new ExportService();
+// Initialize services with error handling
+let aiAnalyzer, taskExecutor, exportService;
+
+try {
+  if (!process.env.OPENAI_API_KEY) {
+    console.error('ERROR: OPENAI_API_KEY environment variable is required');
+    process.exit(1);
+  }
+  
+  aiAnalyzer = new AIAnalyzer(process.env.OPENAI_API_KEY);
+  taskExecutor = new TaskExecutor();
+  exportService = new ExportService();
+  
+  console.log('Services initialized successfully');
+} catch (error) {
+  console.error('ERROR: Failed to initialize services:', error.message);
+  process.exit(1);
+}
 
 // Store active transcriptions
 const activeSessions = new Map();
@@ -156,7 +170,8 @@ io.on('connection', (socket) => {
     session.audioChunks.push(Buffer.from(data.chunk, 'base64'));
     
     // Process in chunks (e.g., every 3 seconds of audio)
-    if (session.audioChunks.length >= 3 && !session.isProcessing) {
+    // Also process if we have too many chunks to prevent memory buildup
+    if ((session.audioChunks.length >= 3 || session.audioChunks.length >= 10) && !session.isProcessing) {
       session.isProcessing = true;
       
       try {
@@ -190,6 +205,8 @@ io.on('connection', (socket) => {
       } catch (error) {
         console.error('Error processing audio chunk:', error);
         socket.emit('error', { message: 'Error processing audio chunk' });
+        // Clear chunks on error to prevent memory buildup
+        session.audioChunks = [];
       } finally {
         session.isProcessing = false;
       }
@@ -313,6 +330,19 @@ app.post('/api/transcribe', upload.single('audio'), async (req, res) => {
       return res.status(400).json({ error: 'No audio file provided' });
     }
     
+    // Validate file size (max 25MB)
+    if (req.file.size > 25 * 1024 * 1024) {
+      fs.unlinkSync(req.file.path); // Clean up the file
+      return res.status(413).json({ error: 'File too large. Maximum size is 25MB' });
+    }
+    
+    // Validate file type
+    const allowedTypes = ['audio/mpeg', 'audio/wav', 'audio/webm', 'audio/mp4', 'audio/ogg'];
+    if (!allowedTypes.includes(req.file.mimetype)) {
+      fs.unlinkSync(req.file.path); // Clean up the file
+      return res.status(400).json({ error: 'Invalid file type. Please upload an audio file' });
+    }
+    
     const transcription = await transcribeAudio(req.file.path, 'file-upload');
     
     res.json({
@@ -321,6 +351,16 @@ app.post('/api/transcribe', upload.single('audio'), async (req, res) => {
     });
   } catch (error) {
     console.error('Error in file upload:', error);
+    
+    // Clean up file if it exists
+    if (req.file && req.file.path && fs.existsSync(req.file.path)) {
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (cleanupError) {
+        console.error('Error cleaning up file:', cleanupError);
+      }
+    }
+    
     res.status(500).json({ error: 'Error processing audio file' });
   }
 });
@@ -495,6 +535,23 @@ app.delete('/api/exports/:filename', (req, res) => {
     console.error('Error deleting export:', error);
     res.status(500).json({ error: 'Error deleting file' });
   }
+});
+
+// Graceful shutdown handler
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully...');
+  server.close(() => {
+    console.log('Server closed');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT received, shutting down gracefully...');
+  server.close(() => {
+    console.log('Server closed');
+    process.exit(0);
+  });
 });
 
 // Start server

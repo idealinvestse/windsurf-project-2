@@ -2,6 +2,9 @@ const { OpenAI } = require('openai');
 
 class AIAnalyzer {
   constructor(apiKey) {
+    if (!apiKey) {
+      throw new Error('OpenAI API key is required');
+    }
     this.openai = new OpenAI({ apiKey });
     this.conversationHistory = new Map();
   }
@@ -10,6 +13,10 @@ class AIAnalyzer {
    * Analyze transcribed text and extract insights
    */
   async analyzeTranscript(text, sessionId, options = {}) {
+    if (!text || text.trim().length === 0) {
+      throw new Error('Text is required for analysis');
+    }
+
     const history = this.conversationHistory.get(sessionId) || [];
     
     // Add the new text to history
@@ -50,12 +57,29 @@ Provide your analysis in JSON format with the following structure:
         response_format: { type: "json_object" }
       });
 
-      const analysis = JSON.parse(response.choices[0].message.content);
+      const responseContent = response.choices[0].message.content;
+      
+      if (!responseContent) {
+        throw new Error('Empty response from OpenAI API');
+      }
+
+      let analysis;
+      try {
+        analysis = JSON.parse(responseContent);
+      } catch (parseError) {
+        console.error('Failed to parse JSON response:', responseContent);
+        throw new Error('Invalid JSON response from AI model');
+      }
+      
+      // Validate analysis structure
+      if (!analysis || typeof analysis !== 'object') {
+        throw new Error('Invalid analysis format received');
+      }
       
       // Update history with assistant response
       history.push({
         role: 'assistant',
-        content: response.choices[0].message.content
+        content: responseContent
       });
       
       // Keep only last 10 messages to avoid token limits
@@ -68,7 +92,18 @@ Provide your analysis in JSON format with the following structure:
       return analysis;
     } catch (error) {
       console.error('Error analyzing transcript:', error);
-      throw error;
+      
+      // Return fallback analysis instead of throwing
+      return {
+        summary: 'Analysis temporarily unavailable',
+        topics: [],
+        actionItems: [],
+        entities: { people: [], places: [], organizations: [] },
+        questions: [],
+        sentiment: 'neutral',
+        suggestedTools: [],
+        error: error.message
+      };
     }
   }
 

@@ -6,6 +6,27 @@ class ExportService {
     this.outputDir = path.join(__dirname, '..', 'exports');
     this.ensureOutputDir();
   }
+  
+  /**
+   * Sanitize filename to prevent directory traversal
+   */
+  sanitizeFilename(filename) {
+    if (!filename) {
+      return null;
+    }
+    
+    // Remove directory traversal attempts
+    const sanitized = filename.replace(/[\\\/]/g, '_')
+      .replace(/\.\./g, '')
+      .replace(/[<>:"|?*]/g, '_');
+    
+    // Ensure filename is not empty after sanitization
+    if (!sanitized.trim()) {
+      return `export_${Date.now()}`;
+    }
+    
+    return sanitized;
+  }
 
   /**
    * Ensure output directory exists
@@ -20,7 +41,8 @@ class ExportService {
    * Export to plain text
    */
   exportToText(transcript, options = {}) {
-    const filename = options.filename || `transcript_${Date.now()}.txt`;
+    const sanitizedFilename = this.sanitizeFilename(options.filename) || `transcript_${Date.now()}.txt`;
+    const filename = sanitizedFilename.endsWith('.txt') ? sanitizedFilename : `${sanitizedFilename}.txt`;
     const filepath = path.join(this.outputDir, filename);
     
     let content = '';

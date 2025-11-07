@@ -180,6 +180,8 @@ document.addEventListener('DOMContentLoaded', () => {
         tasksEl.innerHTML = '';
         transcriptData = [];
         tasks = {};
+        // Clear audio chunks to prevent memory leak
+        audioChunks = [];
         statusEl.textContent = 'Ready to record';
         statusEl.style.color = '';
     });

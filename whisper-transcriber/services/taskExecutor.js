@@ -182,6 +182,15 @@ class TaskExecutor {
    * Add a task to the queue
    */
   addTask(task) {
+    if (!task || typeof task !== 'object') {
+      throw new Error('Task must be a valid object');
+    }
+    
+    // Validate required fields
+    if (!task.toolName && !task.description && !task.action) {
+      throw new Error('Task must have either toolName, description, or action');
+    }
+    
     const taskId = `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     const taskData = {
@@ -189,7 +198,9 @@ class TaskExecutor {
       ...task,
       status: 'pending',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      priority: task.priority || 'medium',
+      autoExecute: task.autoExecute || false
     };
     
     this.tasks.set(taskId, taskData);
