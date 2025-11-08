@@ -32,3 +32,6 @@ logs/
 # Build files
 dist/
 build/
+
+# Test coverage
+coverage/

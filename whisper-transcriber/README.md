@@ -1,6 +1,8 @@
-# Whisper Transcription API Wrapper
+# Whisper Transcription API
 
-A comprehensive real-time audio transcription system with AI-powered analysis, automatic task detection, and intelligent tool execution.
+A modern, modular real-time audio transcription system with AI-powered analysis, automatic task detection, and intelligent tool execution.
+
+> **Version 2.0** - Fully refactored with modular architecture, comprehensive testing, and improved maintainability.
 
 ## Features
 
